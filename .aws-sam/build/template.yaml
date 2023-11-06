@@ -1,0 +1,155 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Transform: AWS::Serverless-2016-10-31
+Description: AWS SAM template with an API and lambda authorizer definition
+Globals:
+  Function:
+    Architectures:
+    - x86_64
+    MemorySize: 128
+    Runtime: go1.x
+    Timeout: 300
+Metadata:
+  AWS::ServerlessRepo::Application:
+    Name: opa-authorization
+    Description: Authentication and authorization using CIAM, OPA Authorization and
+      RBAC
+    Author: Raywall Malheiros
+    ReadmeUrl: ../../README.md
+    Labels:
+    - opa-lambda-authorizer
+    HomePageUrl: https://github.com/raywall/aws-opa-lambda-authorizer
+    SemanticVersion: '0.0.1'
+    SourceCodeUrl: https://github.com/raywall/aws-opa-lambda-authorizer
+Parameters:
+  DynamoEndpointUrl:
+    Type: String
+    Description: The DynamoDB local URL
+    Default: http://dynamodb:8000
+  TableName:
+    Type: String
+    Description: The DynamoDB table for storing user information.
+    Default: UserTable
+  RegionName:
+    Type: String
+    Description: Default region for deployment.
+    Default: sa-east-1
+  AwsEnvironmentName:
+    Type: String
+    Description: AWS Environment where code is being executed (AWS_SAM_LOCAL or AWS).
+    Default: AWS_SAM_LOCAL
+  DevEnvironmentName:
+    Type: String
+    Description: Developer environment where code is being executed (OSX, Windows,
+      or Linux).
+    Default: OSX
+Resources:
+  UserTable:
+    Type: AWS::DynamoDB::Table
+    Properties:
+      TableName:
+        Ref: TableName
+      AttributeDefinitions:
+      - AttributeName: userId
+        AttributeType: S
+      KeySchema:
+      - AttributeName: userId
+        KeyType: HASH
+      ProvisionedThroughput:
+        ReadCapacityUnits: 2
+        WriteCapacityUnits: 2
+  ApiGateway:
+    Type: AWS::Serverless::Api
+    Properties:
+      StageName: Prod
+      Auth:
+        DefaultAuthorizer: LambdaTokenAuthorizer
+        Authorizers:
+          LambdaTokenAuthorizer:
+            FunctionArn:
+              Fn::GetAtt:
+              - LambdaAuthorizer
+              - Arn
+            Identity:
+              Header: Authorization
+              ValidationExpression: ^[Bb]earer [-0-9a-zA-z\.]*$
+              ReauthorizeEvery: 900
+  LambdaAuthorizer:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: LambdaAuthorizer
+      Handler: main
+      Environment:
+        Variables:
+          LAMBDA-INSIGHTS_LOG_LEVEL: info
+    Metadata:
+      SamResourceId: LambdaAuthorizer
+  TokenFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: TokenFunction
+      Handler: main
+      Events:
+        TokenEvent:
+          Type: Api
+          Properties:
+            Path: /token
+            Method: POST
+            RestApiId:
+              Ref: ApiGateway
+            Auth:
+              Authorizer: NONE
+    Metadata:
+      SamResourceId: TokenFunction
+  HelloFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: HelloFunction
+      Handler: main
+      Environment:
+        Variables:
+          message: Hello, World!
+      Events:
+        HelloEvent:
+          Type: Api
+          Properties:
+            Path: /hello
+            Method: GET
+            RestApiId:
+              Ref: ApiGateway
+    Metadata:
+      SamResourceId: HelloFunction
+  UserFunction:
+    Type: AWS::Serverless::Function
+    Properties:
+      CodeUri: UserFunction
+      Handler: main
+      Description: A simple serverless application to demonstrate GET/PUT using DynamoDB
+        Local.
+      Policies: AmazonDynamoDBFullAccess
+      Environment:
+        Variables:
+          ENDPOINT:
+            Ref: DynamoEndpointUrl
+          REGION:
+            Ref: RegionName
+          AWSENV:
+            Ref: AwsEnvironmentName
+          DEVENV:
+            Ref: DevEnvironmentName
+      Events:
+        PutUser:
+          Type: Api
+          Properties:
+            Path: /user
+            Method: POST
+            RestApiId:
+              Ref: ApiGateway
+        GetUser:
+          Type: Api
+          Properties:
+            Path: /user/{userId}
+            Method: GET
+            RestApiId:
+              Ref: ApiGateway
+    Metadata:
+      SamResourceId: UserFunction

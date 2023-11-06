@@ -1,0 +1,16 @@
+FROM amazon/dynamodb-local:latest
+
+WORKDIR /home/dynamodblocal
+
+# ENV HTTP_PROXY=http://proxy.test:8880
+# ENV HTTPS_PROXY=http://proxy.test:8443
+# ENV NO_PROXY=localhost,127.0.0.1
+# ENV AWS_CA_BUNDLE=/etc/pki/tls/certs/ca_bundle.crt
+
+COPY .docker/certs/. /etc/pki/tls/certs/
+RUN mkdir /home/dynamodblocal/data
+
+VOLUME /home/dynamodblocal/data
+
+ENTRYPOINT ["/usr/lib/jvm/java-11-openjdk/bin/java", "-Djava.library.path=./DynamoDBLocal_lib", "-jar", "DynamoDBLocal.jar"]
+CMD ["-dbPath","./data"]

@@ -1,0 +1,20 @@
+version: '3.8'
+
+services:
+  dynamodb-local:
+   command: "dynamodb-start.sh"
+   image: "database.ecr.aws/dynamo/db:1.x"
+   container_name: dynamodb-local
+   ports:
+     - 8000:8000
+  #  volumes:
+  #    - "./docker/dynamodb:/home/dynamodblocal/data"
+   working_dir: /dynamodb
+
+  # database:
+  #   depends_on:
+  #     - dynamodb-local
+  #   image: database.ecr.aws/lambda/go:1.x
+  #   container_name: database
+  #   ports:
+  #     - 8080:8080

@@ -1,0 +1,15 @@
+[Unit]
+Description=Start dynamodb and create table service
+ConditionPathExists=/dynamodb/dynamodb-start.sh
+
+[Install]
+WantedBy=multi-user.target
+
+[Service]
+Type=forking
+ExecStart=/dynamodb/dynamodb-start.sh
+WorkingDirectory=/dynamodb
+TimeoutSec=0
+StandardOutput=tty
+RemainAfterExit=yes
+SysVStartPriority=99

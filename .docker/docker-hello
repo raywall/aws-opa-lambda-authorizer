@@ -1,0 +1,59 @@
+## project compile
+FROM golang:1.20 as build
+
+WORKDIR /app
+
+# ENV HTTP_PROXY=http://proxy.test:8880
+# ENV HTTPS_PROXY=http://proxy.test:8443
+# ENV NO_PROXY=localhost,127.0.0.1
+# ENV AWS_CA_BUNDLE=/etc/pki/tls/certs/ca_bundle.crt
+
+# ENV GOINSECURE=*.prod.aws.cloud.ihf
+# ENV GOPROXY=https://artifactory.prod.aws.cloud.ihf/artifactory/api/go/go-remotes
+# ENV GONOPROXY=127.0.0.1,localhost,kubernetes.docker.internal
+# ENV GOPRIVATE=gitcorp.prod.aws.cloud.ihf/*,github.com/raywall/*
+
+COPY .docker/certs/. /etc/pki/tls/certs
+
+# # authorizer
+# COPY authorizer/. .
+# RUN GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags lambda.norpc -o main
+
+# # database
+# COPY database/. .
+# RUN GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags lambda.norpc -o main
+
+# hello
+COPY hello/. .
+RUN GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags lambda.norpc -o main
+
+# # token
+# COPY token/. .
+# RUN GOOS=linux GOARCH=arm64 CGO_ENABLED=0 go build -tags lambda.norpc -o main
+
+
+## building lambda image
+FROM public.ecr.aws/lambda/go:1-rapid-x86_64
+
+# ENV HTTP_PROXY=http://proxy.test:8880
+# ENV HTTPS_PROXY=http://proxy.test:8443
+# ENV NO_PROXY=localhost,127.0.0.1
+# ENV AWS_CA_BUNDLE=/etc/pki/tls/certs/ca_bundle.crt
+
+# ENV GOINSECURE=*.prod.aws.cloud.ihf
+# ENV GOPROXY=https://artifactory.prod.aws.cloud.ihf/artifactory/api/go/go-remotes
+# ENV GONOPROXY=127.0.0.1,localhost,kubernetes.docker.internal
+# ENV GOPRIVATE=gitcorp.prod.aws.cloud.ihf/*,github.com/raywall/*
+
+COPY .docker/certs/. /etc/pki/tls/certs/
+COPY .docker/aws/entrypoint_script.sh /entrypoint_script.sh
+
+RUN chmod +x /entrypoint_script.sh
+
+COPY .docker/aws/aws-lambda-rie /usr/local/bin/aws-lambda-rie
+RUN chmod +x /usr/local/bin/aws-lambda-rie
+
+COPY --from=build /app/main ${LAMBDA_TASK_ROOT}
+RUN yum install awslogs.noarch -y
+
+ENTRYPOINT [ "/entrypoint_script.sh" ]

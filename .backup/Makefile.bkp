@@ -1,0 +1,32 @@
+.PHONY fetch-dependencies clean-build coverage test build setup-local-environment help
+.DEFAULT help
+
+help:
+	@echo "make clean-build"
+	@echo "		clear all build directories"
+	@echo "make coverage"
+	@echo "		run coverage command cli in development features"
+	@echo "make setup-local-environment"
+	@echo "		setup local environment to run tests"
+	@echo "make test"
+	@echo "		run tests"
+	@echo "make build"
+	@echo "		build app"
+
+fetch-dependencies:
+	go mod download -x
+
+clean-build:
+	rm main
+
+coverage: fetch-dependencies
+	go test ./... -coverprofile=coverage.out -json > report.json
+
+test: fetch-dependencies
+	go test ./...
+
+build: fetch-dependencies
+	go build -tags=go_json,nomsgpack -ldflags="-w -s" -o main .
+
+setup-local-environment:
+	docker-compose up -d

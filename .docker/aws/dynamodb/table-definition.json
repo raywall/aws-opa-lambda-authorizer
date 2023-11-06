@@ -1,0 +1,15 @@
+{
+    "TableName": "UserTable",
+    "AttributeDefinitions": {
+        "AttributeName": "userId",
+        "AttributeType": "S"
+    },
+    "KeySchema": {
+        "AttributeName": "userId",
+        "KeyType": "HASH"
+    },
+    "ProvisionedThroughput": {
+        "ReadCapacityUnits": 2,
+        "WriteCapacityUnits": 2
+    }
+}

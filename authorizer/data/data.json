@@ -1,0 +1,15 @@
+{
+    "users": [
+        { "userId": "b728fd8a-9c9c-4815-a501-49c7cf0f2bec", "name": "Raywall", "lastname": "Souza", "userType": "admin" },
+        { "userId": "4d4d26c8-5c3f-4d14-82b2-940af6ab2620", "name": "Raysssa", "lastname": "Malheiros", "userType": "operator" }
+    ],
+    "userTypes": [
+        "admin",
+        "operator"
+    ],
+    "services": [
+        { "name": "Users", "path": "/users", "method": "GET" },
+        { "name": "Users", "path": "/users", "method": "POST" },
+        { "name": "Hello", "path": "/hello", "method": "GET" }
+    ]
+}
